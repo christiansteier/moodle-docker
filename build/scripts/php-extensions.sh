@@ -64,7 +64,6 @@ docker-php-ext-install gd
 docker-php-ext-configure ldap --with-libdir="lib/$debMultiarch"
 docker-php-ext-install ldap
 
-echo test2
 # Additional PHP modules
 docker-php-ext-install iconv pspell enchant interbase
 
