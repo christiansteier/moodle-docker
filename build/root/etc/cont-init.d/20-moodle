@@ -1,0 +1,189 @@
+#!/usr/bin/with-contenv bash
+set -eu
+
+PHPMAXUPLOAD=${PHPMAXUPLOAD:-100M}
+echo -e "\n[i] PHP: Set max upload to $PHPMAXUPLOAD\n"
+sed -i -e "s/upload_max_filesize\s*=\s*2M/upload_max_filesize = $PHPMAXUPLOAD/g" /usr/local/etc/php/php.ini
+sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = $PHPMAXUPLOAD/g" /usr/local/etc/php/php.ini
+
+function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
+
+APPDIR=${APPDIR:-/var/www/html}
+SUBDIR=${SUBDIR:-}
+if [ ! $SUBDIR = "" ]; then
+ MOODLEDIR=$APPDIR/${SUBDIR}
+else
+ MOODLEDIR=$APPDIR
+fi
+EXTRA=/extra-scripts
+
+APPVERSION=$(grep branch /usr/src/moodle/version.php | tail -n 1 | cut -d"'" -f2 | awk '{print $1}')
+SILENTINSTALL=${SILENTINSTALL:-no}
+
+if [ -f /var/www/html/version.php ]; then
+  INSTALLED_VERSION=$(grep branch $MOODLEDIR/version.php | tail -n 1 | cut -d"'" -f2 | awk '{print $1}')
+else
+  INSTALLED_VERSION="0.0.0.0"
+fi
+
+if version_gt $INSTALLED_VERSION $APPVERSION; then
+  echo -e "\n[Error] Can't start Moodle because the version of the data ($INSTALLED_VERSION) is higher than the docker image version ($APPVERSION) and downgrading is not supported. Are you sure you have pulled the newest image version?"
+  exit 1
+fi
+
+if version_gt $APPVERSION $INSTALLED_VERSION; then
+  if [ ! $SUBDIR = "" ]; then
+    if [ ! $MOODLEDIR = "" ]; then
+      mkdir -p $MOODLEDIR
+    fi
+  fi
+  
+  HOSTTOINSTALL=${HOSTTOINSTALL:-}
+  #wait for rsync in docker swarm with shared folder
+  if [ ! $HOSTTOINSTALL = "" ]; then
+     if [ ! $HOSTTOINSTALL = $HOSTNAME ]; then
+       echo -e "[i] Installation process is performed by another instance \n... finish installationscript here, so that the other process can work without errors"
+       rm /etc/cont-init.d/20-moodle
+       exit 0
+     fi
+     echo -e "\n[i] Copy Moodle $APPVERSION to the working folder $MOODLEDIR\n"
+     rsync -rlDog --chown www-data:root --delete /usr/src/moodle/ $MOODLEDIR/
+  else
+     rsync -rlDog --chown www-data:root --delete /usr/src/moodle/ $MOODLEDIR/
+  fi
+
+  if [ $SILENTINSTALL = "yes" ]; then
+
+    echo -e "\n[i] Silentinstall!\n"
+    
+    APPDB=${APPDB:-moodle}
+    APPDBUSER=${APPDBUSER:-moodle}
+    APPDBPASS_FILE=${APPDBPASS_FILE:-/run/secrets/mysql-password}
+    if [ -f $APPDBPASS_FILE ]; then
+      APPDBPASS=$(cat $APPDBPASS_FILE)
+    else
+      APPDBPASS=${APPDBPASS:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)}
+    fi
+    
+    CREATEAPPDB=${CREATEAPPDB:-yes}
+    MYSQL_HOST=${MYSQL_HOST:-mariadb}
+    MYSQL_PORT=${MYSQL_PORT:-3306}
+    
+    if [ $CREATEAPPDB = "yes" ]; then
+    
+      echo -e "\n[i] First install MariaDB client to create DB\n"
+      apt-get update
+      apt-get install -y --no-install-recommends netcat mariadb-client
+    
+      MYSQL_ROOT_PASSWORD_FILE=${MYSQL_ROOT_PASSWORD_FILE:-/run/secrets/mysql-root}
+      if [ -f $MYSQL_ROOT_PASSWORD_FILE ]; then
+        MYSQL_ROOT_PASSWORD=$(cat $MYSQL_ROOT_PASSWORD_FILE)
+      else
+        MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-}
+      fi
+      if [ -z $MYSQL_ROOT_PASSWORD ]; then
+        echo -e "\n[STOP] MYSQL_ROOT_PASSWORD not set\n"
+        exit 1
+      fi
+      MYSQL_ROOT=${MYSQL_ROOT:-root}
+      
+      
+      echo -e "\n[i] Create database user $APPDBUSER and database $APPDB\n"
+      
+      until nc -z ${MYSQL_HOST} ${MYSQL_PORT}; do sleep 1; echo "Waiting for DB to come up..."; done
+      
+      mysql -u ${MYSQL_ROOT} --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} --port=${MYSQL_PORT} <<-EOF
+      CREATE DATABASE IF NOT EXISTS $APPDB CHARACTER SET utf8mb4;
+      GRANT ALL PRIVILEGES ON $APPDB.* TO $APPDBUSER IDENTIFIED BY '$APPDBPASS';
+      FLUSH PRIVILEGES;
+EOF
+      apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false netcat mariadb-client
+      apt-get clean
+      rm -rf /var/lib/apt/lists/*
+    fi
+
+    echo -e "\n[i] Install now Moodle. Be patient :)\n"
+    
+    APPADMIN=${APPADMIN:-admin}
+    APPADMINPASS_FILE=${APPADMINPASS_FILE:-/run/secrets/appadmin_password}
+    if [ -f $APPADMINPASS_FILE ]; then
+      APPADMINPASS=$(cat $APPADMINPASS_FILE)
+    else
+      APPADMINPASS=${APPADMINPASS:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)}
+    fi
+    APPADMINEMAIL=${APPADMINEMAIL:-admin@lochalhost.local}
+    DBTYPE=${DBTYPE:-mariadb}
+    FULLNAME=${FULLNAME:-Moodle}
+    SERVERNAME=${SERVERNAME:-127.0.0.1}
+    SHORTNAME=${SHORTNAME:-MOODLE}
+    SUMMARY=${SUMMARY:-Moodle}
+    
+    s6-envuidgid www-data php $MOODLEDIR/admin/cli/install.php \
+	--non-interactive \
+	--agree-license \
+	--lang=en \
+	--wwwroot=http://$SERVERNAME \
+	--dataroot=/var/www/moodledata \
+	--dbtype=$DBTYPE \
+	--dbhost=$MYSQL_HOST \
+	--dbname=$APPDB \
+	--dbuser=$APPDBUSER \
+	--dbpass=$APPDBPASS \
+	--dbport=$MYSQL_PORT \
+	--fullname="$FULLNAME" \
+	--shortname="$SHORTNAME" \
+	--summary="$SUMMARY" \
+	--adminuser=$APPADMIN \
+ 	--adminpass=$APPADMINPASS \
+  	--adminemail=$APPADMINEMAIL
+    chown www-data:www-data $MOODLEDIR/config.php
+
+    SSLPROXY=${SSLPROXY:-no}
+    if [ $SSLPROXY = "yes" ]; then
+      echo -e "\n[i] Enable SSL proxy\n"
+      sed -i "s*02777\;*02777\;\n\$CFG->sslproxy = true\;*g" $MOODLEDIR/config.php
+    fi
+    
+    REVERSEPROXY=${REVERSEPROXY:-no}
+    if [ $REVERSEPROXY = "yes" ]; then
+      echo -e "\n[i] Enable reverse proxy\n"
+      sed -i "s*02777\;*02777\;\n\$CFG->reverseproxy = true\;*g" $MOODLEDIR/config.php
+    fi
+    
+    TLS=${TLS:-no}
+    if [ $TLS == "yes" ] || [ $SSLPROXY = "yes" ] || ([ $TLS == "yes" ] && [ $SSLPROXY = "yes" ] ); then
+      sed -i "s*http://${SERVERNAME}*https://${SERVERNAME}*g" $MOODLEDIR/config.php
+      
+      if [ ! $SUBDIR = "" ]; then
+        sed -i "s*https://${SERVERNAME}*https://${SERVERNAME}/$SUBDIR*g" $MOODLEDIR/config.php
+        echo -e "\n[i] Set automatic configuration:\n  Admin = $APPADMIN \n  Pass = $APPADMINPASS \n  www_root: https://${SERVERNAME}/$SUBDIR \n---\n"
+      else
+        echo -e "\n[i] Set automatic configuration:\n  Admin = $APPADMIN \n  Pass = $APPADMINPASS \n  www_root: https://${SERVERNAME} \n---\n"
+      fi
+      
+    else
+    
+      if [ ! $SUBDIR = "" ]; then
+        sed -i "s*http://${SERVERNAME}*http://${SERVERNAME}/$SUBDIR*g" $MOODLEDIR/config.php
+        echo -e "\n[i] Set automatic configuration:\n  Admin = $APPADMIN \n  Pass = $APPADMINPASS \n  www_root: http://${SERVERNAME}/$SUBDIR \n---\n"
+      else
+        echo -e "\n[i] Set automatic configuration:\n  Admin = $APPADMIN \n  Pass = $APPADMINPASS \n  www_root: http://${SERVERNAME} \n---\n"
+      fi
+      
+    fi
+  fi
+fi
+
+# Cron
+echo -e "#Moodle\n*/1 * * * * /usr/local/bin/php $MOODLEDIR/admin/cli/cron.php >/dev/null\n" > /moodle
+crontab /moodle && rm /moodle
+
+# Additional scripts
+if [ -d "$EXTRA" ]; then
+  for file in $EXTRA/*; do
+      [ -f "$file" ] && [ -x "$file" ] && "$file"
+  done
+fi
+
+rm /etc/cont-init.d/20-moodle
+exit 0
