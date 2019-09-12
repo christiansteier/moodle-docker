@@ -107,6 +107,4 @@ RUN \
 	/scripts \
 	/etc/services.d/php-fpm
     
-# copy local files
-COPY build/root/ /
 ENTRYPOINT ["/init"]
