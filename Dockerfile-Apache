@@ -90,8 +90,25 @@ RUN \
     # Cleanup \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false bzip2 vim-tiny git-core && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /etc/dpkg/dpkg.cfg.d/02apt-speedup /etc/ssh/ssh_host_* /var/cache/ldconfig/aux-cache /usr/share/doc /usr/share/man/ /usr/share/info/* /var/cache/man/* /tmp/* /etc/fstab /scripts
-
+    rm -rf \
+	/etc/machine-id \
+	/var/lib/dbus/machine-id \
+	/var/lib/apt/lists/* \
+	/var/log/alternatives.log \
+	/var/log/apt/history.log \
+	/var/log/apt/term.log \
+	/var/log/dpkg.log \
+	/etc/ssh/ssh_host_* \
+	/var/cache/ldconfig/aux-cache \
+	/usr/share/doc \
+	/usr/share/man/ \
+	/usr/share/info/* \
+	/var/cache/man/*  \
+	/tmp/* \
+	/etc/fstab \
+	/scripts \
+	/etc/services.d/php-fpm
+    
 # copy local files
 COPY build/root/ /
 ENTRYPOINT ["/init"]
