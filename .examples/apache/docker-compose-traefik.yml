@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
     container_name: moodle
     hostname: DOCKER-moodle
-    image: cms0/moodle:34-apache
+    image: cms0/moodle:36-apache
     volumes:
      - moodle-config:/config/moodle
      - moodle-data:/var/www/moodledata
