@@ -16,7 +16,7 @@ services:
     restart: always
     container_name: moodle
     hostname: DOCKER-moodle
-    image: cms0/moodle:34-apache
+    image: cms0/moodle:36-apache
     ports:
      - "80:80"
      - "443:443"
