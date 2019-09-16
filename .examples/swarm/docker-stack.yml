@@ -1,0 +1,98 @@
+# Simple example with a single DB instance for a cluster with two nodes and running traefik instance.
+# A network file system such as NFS od GlusterFS is needed.
+
+version: '3.6'
+
+services:
+
+  mariadb:
+    hostname: "{{.Service.Name}}"
+    image: mariadb:10.3-bionic
+    environment:
+     - MYSQL_ROOT_PASSWORD=mysql-root-password
+    networks:
+     - internal
+
+  www:
+    hostname: "{{.Service.Name}}-{{.Task.Slot}}"
+    image: cms0/httpd
+    deploy:
+      replicas: 2
+      endpoint_mode: dnsrr
+      labels:
+       - "traefik.backend=moodle"
+       - "traefik.frontend.rule=Host:moodle.docker.localhost"
+       - "traefik.frontend.headers.STSIncludeSubdomains=true"
+       - "traefik.frontend.headers.STSPreload=true"
+       - "traefik.frontend.passHostHeader=true"
+       - "traefik.frontend.entryPoints=https"
+       - "traefik.protocol=http"
+       - "traefik.port=80"
+       - "traefik.docker.network=web"
+    environment:
+     - TZ=Europe/Berlin
+    volumes:
+     - www:/usr/local/apache2/htdocs:ro
+    networks:
+     - internal
+     - web
+    depends_on:
+     - php-fpm
+
+  php-fpm:
+    image: cms0/moodle:36-php-fpm
+    hostname: "moodle{{.Task.Slot}}"
+    deploy:
+      replicas: 2
+      endpoint_mode: dnsrr
+    environment:
+      - TZ=Europe/Berlin
+      - APPDIR=/usr/local/apache2/htdocs
+      - APPADMIN=moodleamin
+      - APPADMINPASS=app-admin-pass
+      - SILENTINSTALL=yes
+      - HOSTTOINSTALL=moodle1
+      - CREATEAPPDB=yes
+      - MYSQL_ROOT_PASSWORD=mysql-root-password
+    networks:
+      - internal
+    volumes:
+      - config:/config/moodle
+      - www:/usr/local/apache2/htdocs
+      - data:/var/www/moodledata
+    depends_on:
+      - mariadb
+
+networks:
+  web:
+    external: true
+  internal:
+    driver: overlay
+    name: moodle
+    attachable: true
+
+volumes:
+  mysql:
+    name: '{{.Service.Name}}'
+    driver: local
+  config:
+    name: moodle_config
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=IP-OF-NFS-SERVER,nolock,soft,rw
+      device: ":/nfs-server-mountpoint/config"
+  data:
+    name: moodle_data
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=IP-OF-NFS-SERVER,nolock,soft,rw
+      device: ":/nfs-server-mountpoint/data"
+  www:
+    name: moodle_www
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=IP-OF-NFS-SERVER,nolock,soft,rw
+      device: ":/nfs-server-mountpoint/www"
