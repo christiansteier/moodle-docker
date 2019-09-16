@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+
+  mariadb:
+    restart: always
+    container_name: moodle_db
+    hostname: DOCKER-moodle_db
+    image: mariadb:10.3-bionic
+    volumes:
+     - moodle-db:/var/lib/mysql
+    environment:
+     - MYSQL_ROOT_PASSWORD=mysqlrootpasswd
+
+  moodle:
+    restart: always
+    container_name: moodle
+    hostname: DOCKER-moodle
+    image: cms0/moodle:34-apache
+    ports:
+     - "80:80"
+     - "443:443"
+    volumes:
+     - moodle-config:/config/moodle
+     - moodle-data:/var/www/moodledata
+     - moodle-www:/var/www/html
+    environment:
+     - TLS=yes
+     - MYSQL_ROOT_PASSWORD=mysqlrootpasswd
+     - SILENTINSTALL=yes
+    depends_on:
+     - mariadb
+
+volumes:
+  moodle-config:
+  moodle-data:
+  moodle-db:
+  moodle-www:
