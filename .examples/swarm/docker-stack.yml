@@ -40,7 +40,7 @@ services:
      - php-fpm
 
   php-fpm:
-    image: cms0/moodle:36-php-fpm
+    image: cms0/moodle:34-php-fpm
     hostname: "moodle{{.Task.Slot}}"
     deploy:
       replicas: 2
