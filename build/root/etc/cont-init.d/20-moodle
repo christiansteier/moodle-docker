@@ -73,7 +73,7 @@ if version_gt $APPVERSION $INSTALLED_VERSION; then
     
       echo -e "\n[i] First install MariaDB client to create DB\n"
       apt-get update
-      apt-get install -y --no-install-recommends netcat mariadb-client
+      apt-get install -y --no-install-recommends netcat mariadb-client 2>&1>/dev/null
     
       MYSQL_ROOT_PASSWORD_FILE=${MYSQL_ROOT_PASSWORD_FILE:-/run/secrets/mysql-root}
       if [ -f $MYSQL_ROOT_PASSWORD_FILE ]; then
@@ -97,7 +97,7 @@ if version_gt $APPVERSION $INSTALLED_VERSION; then
       GRANT ALL PRIVILEGES ON $APPDB.* TO $APPDBUSER IDENTIFIED BY '$APPDBPASS';
       FLUSH PRIVILEGES;
 EOF
-      apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false netcat mariadb-client
+      apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false netcat mariadb-client 2>&1>/dev/null
       apt-get clean
       rm -rf /var/lib/apt/lists/*
     fi
