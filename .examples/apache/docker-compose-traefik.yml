@@ -1,0 +1,75 @@
+version: '3.5'
+
+services:
+
+  traefik:
+    restart: unless-stopped
+    image: traefik
+    container_name: moodle-traefik
+    command: -c /dev/null --api --docker --docker.domain=docker.localhost --logLevel=DEBUG
+    ports:
+     - "80:80"
+     - "8080:8080"
+    volumes:
+     - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+     - public
+
+  mariadb:
+    restart: unless-stopped
+    container_name: moodle-db
+    hostname: DOCKER-moodle-db
+    image: mariadb:10.3-bionic
+    volumes:
+     - moodle-db:/var/lib/mysql
+    environment:
+     - MYSQL_ROOT_PASSWORD=mysqlrootpasswd
+    labels:
+     - traefik.enable=false
+    networks:
+     - internal
+
+  moodle:
+    restart: unless-stopped
+    container_name: moodle
+    hostname: DOCKER-moodle
+    image: cms0/moodle:34-apache
+    volumes:
+     - moodle-config:/config/moodle
+     - moodle-data:/var/www/moodledata
+     - moodle-www:/var/www/html
+    environment:
+     - MYSQL_ROOT_PASSWORD=mysqlrootpasswd
+     - SILENTINSTALL=yes
+     - SERVERNAME=moodle.docker.localhost
+     - APPADMIN=moodleadmin
+     - APPADMINPASS=moodleadminpass 
+    depends_on:
+     - mariadb
+    labels:
+     - "traefik.backend=moodle"
+     - "traefik.frontend.rule=Host:moodle.docker.localhost"
+     - "traefik.frontend.headers.STSIncludeSubdomains=true"
+     - "traefik.frontend.headers.STSPreload=true"
+     - "traefik.frontend.passHostHeader=true"
+     - "traefik.frontend.entryPoints=http"
+     - "traefik.protocol=http"
+     - "traefik.port=80"
+     - "traefik.docker.network=moodle_public"
+    networks:
+     - internal
+     - public
+
+volumes:
+  moodle-config:
+  moodle-data:
+  moodle-db:
+  moodle-www:
+
+networks:
+  public:
+    name: moodle_public
+    driver: bridge
+  internal:
+    name: moodle_internal
+    external: false
