@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+
+  mariadb:
+    restart: always
+    container_name: moodle-db
+    hostname: DOCKER-moodle-db
+    image: mariadb:10.3-bionic
+    volumes:
+     - moodle-db:/var/lib/mysql
+    environment:
+     - MYSQL_ROOT_PASSWORD=mysqlrootpasswd
+    networks:
+     - internal
+
+  www:
+    hostname: DOCKER-moodle-www
+    container_name: moodle-www
+    image: cms0/httpd
+    ports:
+     - "80:80"
+    environment:
+     - TZ=Europe/Berlin
+     - SERVERNAME=localhost
+    volumes:
+     - moodle-www:/usr/local/apache2/htdocs:ro
+    networks:
+     - internal
+     - web
+    depends_on:
+     - php-fpm
+
+  php-fpm:
+    hostname: DOCKER-moodle-php-fpm
+    image: cms0/moodle:36-php-fpm
+    container_name: moodle-php-fpm
+    environment:
+     - TZ=Europe/Berlin
+     - APPDIR=/usr/local/apache2/htdocs
+     - APPADMIN=moodleadmin
+     - APPADMINPASS=moodle-admin-pass
+     - SILENTINSTALL=yes
+     - SERVERNAME=localhost
+     - MYSQL_ROOT_PASSWORD=mysqlrootpasswd
+    networks:
+      - internal
+    depends_on:
+      - mariadb
+    volumes:
+      - moodle-config:/config/moodle
+      - moodle-www:/usr/local/apache2/htdocs
+      - moodle-data:/var/www/moodledata
+
+networks:
+  internal:
+  web:
+
+volumes:
+  moodle-config:
+  moodle-data:
+  moodle-db:
+  moodle-www:
