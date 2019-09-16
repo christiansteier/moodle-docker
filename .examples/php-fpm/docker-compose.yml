@@ -33,7 +33,7 @@ services:
 
   php-fpm:
     hostname: DOCKER-moodle-php-fpm
-    image: cms0/moodle:36-php-fpm
+    image: cms0/moodle:34-php-fpm
     container_name: moodle-php-fpm
     environment:
      - TZ=Europe/Berlin
