@@ -54,7 +54,7 @@ services:
     hostname: DOCKER-moodle-php-fpm
     restart: unless-stopped
     container_name: moodle-php-fpm
-    image: cms0/moodle:36-php-fpm
+    image: cms0/moodle:34-php-fpm
     volumes:
      - moodle-config:/config/moodle
      - moodle-data:/var/www/moodledata
