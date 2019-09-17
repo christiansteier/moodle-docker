@@ -21,8 +21,10 @@ if [ $TLS == "yes" ]; then
   a2ensite default-ssl
 fi
 
-echo "ServerName $SERVERNAME" > /etc/apache2/conf-available/servername.conf
-a2enconf servername
+if [ -d "/etc/apache2" ]; then
+  echo "ServerName $SERVERNAME" > /etc/apache2/conf-available/servername.conf
+  a2enconf servername
+fi
 
 APPDIR=${APPDIR:-/var/www/html}
 SUBDIR=${SUBDIR:-}
