@@ -27,7 +27,7 @@ services:
       MYSQL_ROOT_PASSWORD: rootpwd
       MYSQL_DATABASE: moodle
     volumes:
-      - moodle-db:/var/lib/mysql
+      - mdl-db:/var/lib/mysql
     container_name: moodle_db
     command: mysqld --max_allowed_packet=16M
     networks:
