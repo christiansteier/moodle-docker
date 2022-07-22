@@ -1,0 +1,43 @@
+version: '3.9'
+
+services:
+  moodle:
+    image: cms0/moodle:3.9
+    container_name: moodle
+    build:
+      context: ./build
+      dockerfile: Dockerfile-Apache
+    environment:
+      - TLS=no
+      - MYSQL_HOST=moodle_db
+      - MYSQL_ROOT_PASSWORD=rootpwd
+      - SILENTINSTALL=no
+    volumes:
+      - mdl-config:/config/moodle
+      - mdl-data:/var/www/moodledata
+      - mdl-www:/var/www/html
+    networks:
+      - mdl
+    ports:
+      - 80:80
+
+  moodle_db:
+    image: mariadb:10.7
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpwd
+      MYSQL_DATABASE: moodle
+    volumes:
+      - moodle-db:/var/lib/mysql
+    container_name: moodle_db
+    command: mysqld --max_allowed_packet=16M
+    networks:
+      - mdl
+
+volumes:
+  mdl-config:
+  mdl-data:
+  mdl-www:
+  mdl-db:
+
+networks:
+  mdl:

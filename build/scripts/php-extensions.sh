@@ -6,18 +6,18 @@ mv /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini
 
 # Build packages will be added during the build, but will be removed at the end.
 BUILD_PACKAGES="gettext gnupg libcurl4-gnutls-dev libfreetype6-dev libicu-dev libjpeg62-turbo-dev \
-  libldap2-dev libmariadbclient-dev libmemcached-dev libpng-dev libpq-dev libxml2-dev libxslt-dev \
+  libldap2-dev libmariadb-dev libmemcached-dev libpng-dev libpq-dev libxml2-dev libxslt-dev \
   unixodbc-dev libzip-dev libsqlite3-dev libgeoip-dev libmagickwand-dev libpspell-dev dpkg-dev \
-  libenchant-dev firebird-dev"
+  libenchant-2-dev firebird-dev"
 
 # Packages for Postgres.
 PACKAGES_POSTGRES="libpq5"
 
 # Packages for MariaDB and MySQL.
-PACKAGES_MYMARIA="libmariadbclient18"
+PACKAGES_MYMARIA="libmariadb3"
 
 # Packages for other Moodle runtime dependenices.
-PACKAGES_RUNTIME="ghostscript libaio1 libcurl3 libgss3 libicu57 libmcrypt-dev libxml2 libxslt1.1 locales sassc unzip unixodbc"
+PACKAGES_RUNTIME="ghostscript libaio1 libcurl4 libgss3 libicu67 libmcrypt-dev libxml2 libxslt1.1 locales sassc unzip unixodbc"
 
 # Packages for Memcached.
 PACKAGES_MEMCACHED="libmemcached11 libmemcachedutil2"
@@ -53,20 +53,19 @@ docker-php-ext-install \
         zip
 
 # Mcrypt
-pecl install mcrypt-1.0.1
+pecl install mcrypt-1.0.4
 docker-php-ext-enable mcrypt
 
 # GD
-docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-png-dir=/usr --with-jpeg-dir=/usr
+docker-php-ext-configure gd --with-jpeg=/usr/include/ --with-freetype=/usr/include/
 docker-php-ext-install gd
 
 # LDAP
 docker-php-ext-configure ldap --with-libdir="lib/$debMultiarch"
 docker-php-ext-install ldap
 
-echo test2
 # Additional PHP modules
-docker-php-ext-install iconv pspell enchant interbase
+docker-php-ext-install iconv pspell
 
 # Memcached, Redis, APCu, igbinary.
 pecl install memcached redis apcu igbinary
