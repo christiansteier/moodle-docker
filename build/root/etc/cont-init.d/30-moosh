@@ -1,0 +1,17 @@
+#!/usr/bin/with-contenv bash
+set -eu
+
+# Moosh
+MOOSH=${MOOSH:-no}
+if [ "$MOOSH" == "yes" ]; then
+	echo -e "\nInstall MOOSH\n"
+	if [ ! -d /opt ]; then sudo mkdir /opt ; fi
+	git clone https://github.com/tmuras/moosh.git /opt/moosh
+	rm -rf /opt/moosh/.git
+	composer update --with-dependencies --working-dir=/opt/moosh
+	composer install --working-dir=/opt/moosh
+	ln -s /opt/moosh/moosh.php /usr/local/bin/moosh
+fi
+
+rm /etc/cont-init.d/30-moosh
+exit 0

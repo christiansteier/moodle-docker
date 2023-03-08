@@ -1,0 +1,27 @@
+#!/usr/bin/with-contenv bash
+set -eu
+
+
+APPDIR=${APPDIR:-/var/www/html}
+SUBDIR=${SUBDIR:-}
+if [ ! $SUBDIR = "" ]; then
+ MOODLEDIR=$APPDIR/${SUBDIR}
+else
+ MOODLEDIR=$APPDIR
+fi
+
+if [ ! -d /config/moodle ]; then
+  mkdir -p /config/moodle
+fi
+
+if [ ! -f /config/moodle/config.php ] || [ -f $MOODLEDIR/config.php ]; then
+  mv $MOODLEDIR/config.php /config/moodle/config.php
+  sed -i "s*require_once(__DIR__ . '/lib/setup.php'*require_once('$MOODLEDIR/lib/setup.php'*g" /config/moodle/config.php
+fi
+
+if [ ! -f $MOODLEDIR/config.php ] || [ -f /config/moodle/config.php ]; then
+  ln -s /config/moodle/config.php $MOODLEDIR/config.php
+fi
+
+mv /etc/cont-init.d/50-mdl-config /etc/cont-init.d/mdl-config
+exit 0

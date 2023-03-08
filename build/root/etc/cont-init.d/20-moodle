@@ -1,10 +1,25 @@
 #!/usr/bin/with-contenv bash
 set -eu
 
-PHPMAXUPLOAD=${PHPMAXUPLOAD:-100M}
-echo -e "\n[i] PHP: Set max upload to $PHPMAXUPLOAD\n"
-sed -i -e "s/upload_max_filesize\s*=\s*2M/upload_max_filesize = $PHPMAXUPLOAD/g" /usr/local/etc/php/php.ini
-sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = $PHPMAXUPLOAD/g" /usr/local/etc/php/php.ini
+PHP_MAX_INPUT_VARS=${PHP_MAX_INPUT_VARS:-5000}
+echo -e "\n[i] PHP: Set maximum number of input variables for PHP scripts to $PHP_MAX_INPUT_VARS\n"
+sed -i -e "s/;max_input_vars\s*=\s*1000/max_input_vars = $PHP_MAX_INPUT_VARS/g" /usr/local/etc/php/php.ini
+
+PHP_UPLOAD_MAX_FILESIZE=${PHP_UPLOAD_MAX_FILESIZE:-256M}
+echo -e "\n[i] PHP: Set maximum file size for PHP uploads to $PHP_UPLOAD_MAX_FILESIZE\n"
+sed -i -e "s/upload_max_filesize\s*=\s*2M/upload_max_filesize = $PHP_UPLOAD_MAX_FILESIZE/g" /usr/local/etc/php/php.ini
+
+PHP_POST_MAX_SIZE=${PHP_POST_MAX_SIZE:-256M}
+echo -e "\n[i] PHP: Set maximum size for PHP POST requests to $PHP_POST_MAX_SIZE\n"
+sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = $PHP_POST_MAX_SIZE/g" /usr/local/etc/php/php.ini
+
+PHP_MEMORY_LIMIT=${PHP_MEMORY_LIMIT:-256M}
+echo -e "\n[i] PHP: Set memory limit for PHP scripts to $PHP_MEMORY_LIMIT\n"
+sed -i -e "s/memory_limit\s*=\s*128M/memory_limit = $PHP_MEMORY_LIMIT/g" /usr/local/etc/php/php.ini
+
+PHP_MAX_EXECUTION_TIME=${PHP_MAX_EXECUTION_TIME:-30}
+echo -e "\n[i] PHP: Set maximum execution time for PHP scripts to $PHP_MAX_EXECUTION_TIME\n"
+sed -i -e "s/max_execution_time\s*=\s*30/max_execution_time = $PHP_MAX_EXECUTION_TIME/g" /usr/local/etc/php/php.ini
 
 function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
 

@@ -1,8 +1,8 @@
-FROM php:7.4-apache-bullseye
+FROM php:8.0-apache-bullseye
 LABEL maintainer="Christian-Maximilian Steier"
 
 ARG VERSION=3
-ARG RELEASE=9
+ARG RELEASE=11
 ARG OVERLAY_VERSION="v2.2.0.3"
 ARG minimal_apt_get_install='apt-get install -y --no-install-recommends'
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -65,16 +65,6 @@ RUN \
     chown -R www-data:root /var/www && \
     chmod -R g=u /var/www && \
     a2enmod rewrite headers expires && \
-    \
-    # Moosh \
-    echo "\n[i] Install MOOSH\n" && \
-    if [ ! -d /opt ]; then mkdir /opt ; fi && \
-    cd /opt && \
-    git clone https://github.com/tmuras/moosh.git && \
-    cd moosh && \
-    rm -rf .git && \
-    composer install && \
-    ln -s $PWD/moosh.php /bin/moosh && \
     \
     # Cleanup \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false bzip2 vim-tiny git-core && \

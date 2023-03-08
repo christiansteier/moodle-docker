@@ -2,12 +2,17 @@ version: '3.9'
 
 services:
   moodle:
-    image: cms0/moodle:3.9
+    image: cms0/moodle:3.11
     container_name: moodle
     build:
       context: ./build
       dockerfile: Dockerfile-Apache
     environment:
+      - PHP_MAX_EXECUTION_TIME=60
+      - PHP_MEMORY_LIMIT=512M
+      - PHP_POST_MAX_SIZE=512M
+      - PHP_UPLOAD_MAX_FILESIZE=512M
+      - MOOSH=yes
       - TLS=no
       - MYSQL_HOST=moodle_db
       - MYSQL_ROOT_PASSWORD=rootpwd

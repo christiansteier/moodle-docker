@@ -49,11 +49,10 @@ docker-php-ext-install \
         pdo_pgsql \
         soap \
         xsl \
-        xmlrpc \
         zip
 
 # Mcrypt
-pecl install mcrypt-1.0.4
+pecl install mcrypt-1.0.6
 docker-php-ext-enable mcrypt
 
 # GD
