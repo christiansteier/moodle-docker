@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   moodle:
-    image: cms0/moodle:3.11
+    image: cms0/moodle:4.1
     container_name: moodle
     build:
       context: ./build
