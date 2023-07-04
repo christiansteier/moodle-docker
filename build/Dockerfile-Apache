@@ -46,7 +46,7 @@ RUN \
     \
     # Utilities \
     echo -e "\n[i] Install often used tools\n" && \
-    $minimal_apt_get_install bzip2 vim-tiny curl git-core rsync unzip graphviz && \
+    $minimal_apt_get_install bzip2 vim-tiny curl git-core rsync unzip graphviz wget && \
     ln -s /usr/bin/vim.tiny /usr/bin/vim && \
     \
     # PHP \
