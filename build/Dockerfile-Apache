@@ -2,7 +2,7 @@ FROM php:8.0-apache-bullseye
 LABEL maintainer="Christian-Maximilian Steier"
 
 ARG VERSION=4
-ARG RELEASE=01
+ARG RELEASE=1
 ARG OVERLAY_VERSION="v2.2.0.3"
 ARG minimal_apt_get_install='apt-get install -y --no-install-recommends'
 ENV DEBIAN_FRONTEND=noninteractive \
