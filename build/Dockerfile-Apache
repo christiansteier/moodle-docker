@@ -60,7 +60,15 @@ RUN \
     composer require rybakit/msgpack && \
     \
     # Moodle \
-    /scripts/moodle.sh && \
+    echo -e "\n[i] Install Moodle\n" && \
+    curl -LO https://packaging.moodle.org/stable${VERSION}0${RELEASE}/moodle-latest-${VERSION}0${RELEASE}.tgz && \
+    curl -LO https://packaging.moodle.org/stable${VERSION}0${RELEASE}/moodle-latest-${VERSION}0${RELEASE}.tgz.sha256 && \
+    echo "[i] Verifying integrity..." && \
+    CHECKSUM_STATE=$(echo -n $(sha256sum -c moodle-latest-${VERSION}0${RELEASE}.tgz.sha256) | tail -c 2) && \
+    if [ "${CHECKSUM_STATE}" != "OK" ]; then echo "[!!] Checksum does not match!" && exit 1; fi && \
+    echo "[i] All seems good, now unpacking moodle-latest-${VERSION}0${RELEASE}.tgz" && \
+    tar zxvf moodle-latest-${VERSION}0${RELEASE}.tgz -C /usr/src && \
+    rm moodle-latest-${VERSION}0${RELEASE}.* && \
     mkdir /var/www/moodledata && \
     chown -R www-data:root /var/www && \
     chmod -R g=u /var/www && \
