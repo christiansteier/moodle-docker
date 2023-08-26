@@ -21,6 +21,7 @@ fi
 
 if [ ! -f $MOODLEDIR/config.php ] || [ -f /config/moodle/config.php ]; then
   ln -s /config/moodle/config.php $MOODLEDIR/config.php
+  chown -R www-data:www-data $MOODLEDIR/config.php
 fi
 
 mv /etc/cont-init.d/50-mdl-config /etc/cont-init.d/mdl-config
